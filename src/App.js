@@ -1,86 +1,96 @@
-import React from 'react';
+import React from "react";
+import "./App.css";
 
-import './App.css';
+// *Note this was origninally App-New.js
 
-declare var ZoomMtg
-
-ZoomMtg.setZoomJSLib('https://source.zoom.us/2.0.1/lib', '/av');
-
-ZoomMtg.preLoadWasm();
-ZoomMtg.prepareWebSDK();
-// loads language files, also passes any error messages to the ui
-ZoomMtg.i18n.load('en-US');
-ZoomMtg.i18n.reload('en-US');
+declare var ZoomMtgEmbedded;
 
 function App() {
+  const client = ZoomMtgEmbedded.createClient();
 
   // setup your signature endpoint here: https://github.com/zoom/meetingsdk-sample-signature-node.js
-  var signatureEndpoint = ''
-  var apiKey = ''
-  var meetingNumber = '123456789'
-  var role = 0
-  var leaveUrl = 'http://localhost:3000'
-  var userName = 'React'
-  var userEmail = ''
-  var passWord = ''
-  // pass in the registrant's token if your meeting or webinar requires registration. More info here:
-  // Meetings: https://marketplace.zoom.us/docs/sdk/native-sdks/web/build/meetings/join#join-registered
-  // Webinars: https://marketplace.zoom.us/docs/sdk/native-sdks/web/build/webinars/join#join-registered-webinar
-  var registrantToken = ''
-
+  const signatureEndpoint = "https://generate-meeting-sign-lavax.herokuapp.com";
+  const apiKey = "RmYD3DaSR3SfZH10RyqQKA";
+  const meetingNumber = "92176777024";
+  const role = 0;
+  const userName = "Lavax tester";
+  const userEmail = "";
+  const passWord = "";
+  
   function getSignature(e) {
     e.preventDefault();
 
     fetch(signatureEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         meetingNumber: meetingNumber,
-        role: role
+        role: role,
+      }),
+    })
+      .then((res) => res.json())
+      .then((response) => {
+        console.log("line 34", response);
+        console.log("line 35", response?.signature);
+        startMeeting(response?.signature);
       })
-    }).then(res => res.json())
-    .then(response => {
-      startMeeting(response.signature)
-    }).catch(error => {
-      console.error(error)
-    })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 
-  function startMeeting(signature) {
-    document.getElementById('zmmtg-root').style.display = 'block'
+  const startMeeting = (signature) => {
+    let meetingSDKElement = document.getElementById("meetingSDKElement");
 
-    ZoomMtg.init({
-      leaveUrl: leaveUrl,
-      success: (success) => {
-        console.log(success)
-
-        ZoomMtg.join({
-          signature: signature,
-          meetingNumber: meetingNumber,
-          userName: userName,
-          apiKey: apiKey,
-          userEmail: userEmail,
-          passWord: passWord,
-          tk: registrantToken,
-          success: (success) => {
-            console.log(success)
-          },
-          error: (error) => {
-            console.log(error)
-          }
-        })
-
+    client.init({
+      debug: true,
+      zoomAppRoot: meetingSDKElement,
+      language: "en-US",
+      customize: {
+        meetingInfo: [
+          "topic",
+          "host",
+          "mn",
+          "pwd",
+          "telPwd",
+          "invite",
+          "participant",
+          "dc",
+          "enctype",
+        ],
+        toolbar: {
+          buttons: [
+            {
+              text: "Custom Button",
+              className: "CustomButton",
+              onClick: () => {
+                console.log("custom button");
+              },
+            },
+          ],
+        },
       },
-      error: (error) => {
-        console.log(error)
-      }
-    })
-  }
+    });
+
+    client.join({
+      apiKey: apiKey,
+      signature: signature,
+      meetingNumber: meetingNumber,
+      password: passWord,
+      userName: userName,
+      userEmail: userEmail,
+    });
+  };
 
   return (
     <div className="App">
       <main>
         <h1>Zoom Meeting SDK Sample React</h1>
+
+        {/* For Component View */}
+        <div id="meetingSDKElement">
+          {/* Zoom Meeting SDK Component View Rendered Here */}
+        </div>
 
         <button onClick={getSignature}>Join Meeting</button>
       </main>
